@@ -39,3 +39,4 @@ if __name__ == "__main__":
     # Write JSON file
     with open("todo_all_employees.json", "w") as json_file:
         json.dump(final_data, json_file)
+        
