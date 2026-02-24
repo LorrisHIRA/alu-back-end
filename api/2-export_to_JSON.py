@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 """
-Script that exports employee TODO list data to JSON format.
+Fetch and display an employee's TODO list progress
+from https://jsonplaceholder.typicode.com
 """
 
 import json
@@ -8,36 +9,49 @@ import requests
 import sys
 
 
-if __name__ == "__main__":
+def main():
     if len(sys.argv) != 2:
+        print("Usage: python3 0-gather_data_from_an_API.py <employee_id>")
         sys.exit(1)
 
-    employee_id = sys.argv[1]
+    try:
+        employee_id = int(sys.argv[1])
+    except ValueError:
+        print("Employee ID must be an integer")
+        sys.exit(1)
+
     base_url = "https://jsonplaceholder.typicode.com"
 
-    # Fetch user information
-    user_response = requests.get(f"{base_url}/users/{employee_id}")
-    user_data = user_response.json()
-    username = user_data.get("username")
+    # Fetch employee info
+    user_resp = requests.get(f"{base_url}/users/{employee_id}")
+    if user_resp.status_code != 200:
+        sys.exit(1)
 
-    # Fetch TODO list
-    todos_response = requests.get(
-        f"{base_url}/todos", params={"userId": employee_id}
-    )
-    todos = todos_response.json()
+    user = user_resp.json()
+    user_id = user.get("id")
+    username = user.get("username")
 
-    # Build JSON structure
-    tasks_list = []
+    # Fetch todos
+    todos_resp = requests.get(f"{base_url}/todos",
+                              params={"userId": employee_id})
+    if todos_resp.status_code != 200:
+        sys.exit(1)
+
+    todos = todos_resp.json()
+
+    tasks = []
     for task in todos:
-        tasks_list.append({
+        tasks.append({
             "task": task.get("title"),
             "completed": task.get("completed"),
             "username": username
         })
 
-    final_data = {employee_id: tasks_list}
+    filename = f"{user_id}.json"
+    data = {str(user_id): tasks}
 
-    # Write to file
-    filename = f"{employee_id}.json"
-    with open(filename, "w") as json_file:
-        json.dump(final_data, json_file)
+    with open(filename, mode="w", encoding="utf-8") as jsonfile:
+        json.dump(data, jsonfile)
+
+if __name__ == "__main__":
+    main() 

@@ -1,41 +1,50 @@
 #!/usr/bin/python3
 """
-Script that exports all employees' TODO list data to JSON format.
+Fetch and display an employee's TODO list progress
+from https://jsonplaceholder.typicode.com
 """
 
 import json
 import requests
+import sys
 
 
-if __name__ == "__main__":
+def main():
     base_url = "https://jsonplaceholder.typicode.com"
 
-    # Fetch all users
-    users_response = requests.get(f"{base_url}/users")
-    users = users_response.json()
+    # Fetch employee info
+    users_resp = requests.get(f"{base_url}/users")
+    if users_resp.status_code != 200:
+        sys.exit(1)
 
-    # Fetch all todos
-    todos_response = requests.get(f"{base_url}/todos")
-    todos = todos_response.json()
+    users = users_resp.json()
 
-    # Build dictionary
-    final_data = {}
+    # Fetch todos
+    todos_resp = requests.get(f"{base_url}/todos")
+    todos = todos_resp.json()
 
+    user_map = {}
     for user in users:
-        user_id = str(user.get("id"))
-        username = user.get("username")
+        user_map[user.get('id')] = user.get('username')
 
-        # Initialize list for this user
-        final_data[user_id] = []
+    all_tasks = {}
+    for task in todos:
+        user_id = task.get('userId')
+        user_id_str = str(user_id)
 
-        for task in todos:
-            if task.get("userId") == user.get("id"):
-                final_data[user_id].append({
-                    "username": username,
-                    "task": task.get("title"),
-                    "completed": task.get("completed")
-                })
+        if user_id_str not in all_tasks:
+            all_tasks[user_id_str] = []
 
-    # Write JSON file
-    with open("todo_all_employees.json", "w") as json_file:
-        json.dump(final_data, json_file, indent=4)
+        all_tasks[user_id_str].append({
+            "username": user_map[user_id],
+            "task": task.get('title'),
+            "completed": task.get('completed')
+        })
+
+    filename = "todo_all_employees.json"
+
+    with open(filename, mode="w", encoding="utf-8") as jsonfile:
+        json.dump(all_tasks, jsonfile)
+
+if __name__ == "__main__":
+    main() 
